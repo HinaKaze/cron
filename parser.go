@@ -362,10 +362,31 @@ func parseDescriptor(descriptor string) (Schedule, error) {
 			Month:  all(months),
 			Dow:    all(dow),
 		}, nil
+	case "@now":
+		return &SpecSchedule{
+			Second: all(seconds),
+			Minute: all(minutes),
+			Hour:   all(hours),
+			Dom:    all(dom),
+			Month:  all(months),
+			Dow:    all(dow),
+		}, nil
 	}
 
 	const every = "@every "
 	if strings.HasPrefix(descriptor, every) {
+		if n := strings.Index(descriptor, "M"); n >= 0 {
+			if n == 0 {
+				return nil, fmt.Errorf("Failed to parse month delay %s", descriptor)
+			}
+			delayStr := descriptor[len(every):n]
+			delay, err := strconv.Atoi(delayStr)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse month delay %s: %s", descriptor, err)
+			}
+			return MonthDelay(delay), nil
+		}
+
 		duration, err := time.ParseDuration(descriptor[len(every):])
 		if err != nil {
 			return nil, fmt.Errorf("Failed to parse duration %s: %s", descriptor, err)
